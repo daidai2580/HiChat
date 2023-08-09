@@ -20,7 +20,7 @@ func GetUserList() ([]*models.UserBasic, error) {
 
 func FindUserByNameAndPwd(name, password string) (*models.UserBasic, error) {
 	user := models.UserBasic{}
-	tx := global.DB.Where("name = ? and pass_word=? ", name, password).First(&user)
+	tx := global.DB.Where("name = ? and password=? ", name, password).First(&user)
 	if tx.RowsAffected == 0 {
 		return nil, errors.New("为查询到该用户")
 	}
