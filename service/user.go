@@ -3,6 +3,7 @@ package service
 import (
 	"HiChat/common"
 	"HiChat/dao"
+	"HiChat/middlewear"
 	"HiChat/models"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,7 @@ func List(ctx *gin.Context) {
 func LoginByNameAndPasseWord(ctx *gin.Context) {
 	var name = ctx.PostForm("name")
 	password := ctx.PostForm("password")
-	data, err := dao.FindUserByNameAndPwd(name, password)
+	data, err := dao.FindUserByName(name)
 	if err != nil {
 		ctx.JSON(200, gin.H{
 			"code":    -1, //0 表示成功， -1 表示失败
@@ -36,17 +37,33 @@ func LoginByNameAndPasseWord(ctx *gin.Context) {
 		})
 		return
 	}
-	if data.Name != "" {
-		ctx.JSON(200, &data)
+	ok := common.CheckPassWord(password, data.Salt, data.Password)
+	if !ok {
+		ctx.JSON(200, gin.H{
+			"code":    -1,
+			"message": "密码错误",
+		})
+		return
 	}
+	token, err := middlewear.GenerateToken(data.ID, "yk")
+	if err != nil {
+		zap.S().Info("生成token失败", err)
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "登录成功",
+		"tokens":  token,
+		"userId":  data.ID,
+	})
 }
 
 func NewUser(ctx *gin.Context) {
 	user := models.UserBasic{}
 	user.Name = ctx.Request.FormValue("name")
-	user.Password = ctx.Request.FormValue("password")
+	password := ctx.Request.FormValue("password")
 	repassword := ctx.Request.FormValue("Identity")
-	if user.Name == "" || user.Password == "" || repassword == "" {
+	if user.Name == "" || password == "" || repassword == "" {
 		ctx.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
 			"message": "用户名或密码不能为空！",
@@ -64,7 +81,7 @@ func NewUser(ctx *gin.Context) {
 		return
 	}
 
-	if user.Password != repassword {
+	if password != repassword {
 		ctx.JSON(200, gin.H{
 			"code":    -1, //  0成功   -1失败
 			"message": "两次密码不一致！",
@@ -74,6 +91,9 @@ func NewUser(ctx *gin.Context) {
 	}
 
 	t := time.Now()
+	salt := fmt.Sprintf("%d", rand.Int31())
+	user.Password = common.SaltPassWord(password, salt)
+	user.Salt = salt
 	user.LoginTime = &t
 	user.LoginOutTime = &t
 	user.HeartBeatTime = &t

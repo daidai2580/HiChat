@@ -45,7 +45,7 @@ func FindUserByName(name string) (*models.UserBasic, error) {
 
 func FindUser(name string) (*models.UserBasic, error) {
 	user := models.UserBasic{}
-	if tx := global.DB.Where("name =?", name); tx.RowsAffected == 0 {
+	if tx := global.DB.Where("name =?", name); tx.RowsAffected != 0 {
 		return nil, errors.New("当前用户名已存在")
 	}
 	return &user, nil
