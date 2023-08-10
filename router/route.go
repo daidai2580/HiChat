@@ -19,6 +19,7 @@ func Route() *gin.Engine {
 		user.POST("/new", service.NewUser)
 		user.DELETE("/delete", middlewear.JWY(), service.DeleteUser)
 		user.POST("/update", middlewear.JWY(), service.UpdateUser)
+		user.GET("/sendMsg", service.SendUserMsg)
 	}
 
 	relation := v1.Group("relation").Use(middlewear.JWY())

@@ -362,3 +362,7 @@ func AddFriendByName(ctx *gin.Context) {
 		"message": "添加好友成功",
 	})
 }
+
+func SendUserMsg(c *gin.Context) {
+	models.Chat(c.Writer, c.Request)
+}
