@@ -3,6 +3,7 @@ package service
 import (
 	"HiChat/common"
 	"HiChat/dao"
+	"HiChat/models"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"strconv"
@@ -42,4 +43,14 @@ func FriendList(c *gin.Context) {
 		infos = append(infos, info)
 	}
 	common.RespOKList(c.Writer, infos, len(infos))
+}
+
+func RedisMsg(c *gin.Context) {
+	userIdA, _ := strconv.Atoi(c.PostForm("userIdA"))
+	userIdB, _ := strconv.Atoi(c.PostForm("userIdB"))
+	start, _ := strconv.Atoi(c.PostForm("start"))
+	end, _ := strconv.Atoi(c.PostForm("end"))
+	isRev, _ := strconv.ParseBool(c.PostForm("isRev"))
+	msg := models.RedisMsg(int64(userIdA), int64(userIdB), int64(start), int64(end), isRev)
+	common.RespOKList(c.Writer, "ok", msg)
 }

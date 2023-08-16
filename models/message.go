@@ -1,11 +1,15 @@
 package models
 
 import (
+	"HiChat/global"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 	"gopkg.in/fatih/set.v0"
+	"net"
 	"net/http"
 	"strconv"
 	"sync"
@@ -36,7 +40,7 @@ type Node struct {
 }
 
 var clientMap = make(map[int64]*Node, 0)
-
+var upSendChan chan []byte = make(chan []byte, 1204)
 var rwLock sync.RWMutex
 
 // Chat    需要 ：发送者ID ，接受者ID ，消息类型，发送的内容，发送类型
@@ -107,18 +111,167 @@ func recProc(node *Node) {
 			zap.S().Info("json解析失败", err)
 			return
 		}
+		brodMsg(data)
+	}
+}
 
-		if msg.Type == 1 {
-			zap.S().Info("这是一条私信:", msg.Content)
-			tarNode, ok := clientMap[msg.TargetId]
-			if !ok {
-				zap.S().Info("不存在对应的node", msg.TargetId)
-				return
-			}
+func brodMsg(msg []byte) {
+	upSendChan <- msg
+}
 
-			tarNode.DataQueue <- data
-			fmt.Println("发送成功：", string(data))
-		}
+func sendMsg(id int64, msg []byte) {
+	rwLock.Lock()
+	node, ok := clientMap[id]
+	rwLock.Unlock()
+
+	if !ok {
+		zap.S().Info("UserID没有对应的node")
+		return
+	}
+	zap.S().Info("targetId:", id, "node:", node)
+	if ok {
+		node.DataQueue <- msg
+	}
+}
+
+func dispatch(data []byte) {
+	msg := Message{}
+	err := json.Unmarshal(data, &msg)
+	if err != nil {
+		zap.S().Info("消息解析失败：", err)
+		return
+	}
+	fmt.Println("解析数据:", msg, "msg.FormId", msg.FromId, "targetId:", msg.TargetId, "type:", msg.Type)
+	//判断消息类型
+	switch msg.Type {
+	case 1:
+		sendMsgAndSave(msg.TargetId, data)
+	case 2:
+		sendGroup(uint(msg.FromId), uint(msg.TargetId), data)
 
 	}
+}
+
+func sendGroup(fromId uint, targetId uint, data []byte) (int, error) {
+	users, err := FindUsers(targetId)
+	if err != nil {
+		return -1, err
+	}
+	for _, userId := range *users {
+		if fromId != userId {
+			sendMsgAndSave(int64(userId), data)
+		}
+	}
+	return 0, nil
+}
+
+func sendMsgAndSave(userId int64, msg []byte) {
+	rwLock.RLock()
+	node, ok := clientMap[userId]
+	rwLock.RUnlock()
+	jsonMsg := Message{}
+	json.Unmarshal(msg, &jsonMsg)
+	ctx := context.Background()
+	targetIdstr := strconv.Itoa(int(userId))
+	userIdStr := strconv.Itoa(int(jsonMsg.FromId))
+
+	if ok {
+		//如果当前用户在线，将洗洗转发到用户的websocker链接中然后进行存储
+		node.DataQueue <- msg
+	}
+	var key string
+	if userId > jsonMsg.FromId {
+		key = "msg_" + userIdStr + "_" + targetIdstr
+	} else {
+		key = "msg_" + targetIdstr + "_" + userIdStr
+	}
+	res, err := global.RedisDB.ZRevRange(ctx, key, 0, 1).Result()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	score := float64(cap(res)) + 1
+	result, err := global.RedisDB.ZAdd(ctx, key, &redis.Z{score, msg}).Result()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(result)
+}
+
+func UpdRecProc() {
+	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{
+		IP:   net.IPv4(127, 0, 0, 1),
+		Port: 3000,
+	})
+	if err != nil {
+		zap.S().Info("监听udp端口时报", err)
+		return
+	}
+	defer udpConn.Close()
+	for {
+		var buf [1024]byte
+		n, err := udpConn.Read(buf[0:])
+		if err != nil {
+			zap.S().Info("读取Udp数据失败", err)
+			return
+		}
+		dispatch(buf[0:n])
+	}
+}
+
+func UdpSendProc() {
+	udpConn, err := net.DialUDP("udp", nil, &net.UDPAddr{
+		IP:   net.IPv4(127, 0, 0, 1),
+		Port: 3000,
+		Zone: "",
+	})
+	if err != nil {
+		zap.S().Info("拨号UDP端口失败", err)
+		return
+	}
+	defer udpConn.Close()
+	for {
+		select {
+		case data := <-upSendChan:
+			_, err := udpConn.Write(data)
+			if err != nil {
+				zap.S().Info("写入udp消息失败", err)
+				return
+			}
+		}
+	}
+}
+
+func RedisMsg(userIdA int64, userIdB int64, start int64, end int64, isRev bool) []string {
+	ctx := context.Background()
+	userIdStr := strconv.Itoa(int(userIdA))
+	targetIdStr := strconv.Itoa(int(userIdB))
+
+	var key string
+	if userIdA > userIdB {
+		key = "msg_" + targetIdStr + "_" + userIdStr
+	} else {
+		key = "msg_" + userIdStr + "_" + targetIdStr
+	}
+	var rels []string
+	var err error
+
+	if isRev {
+		rels, err = global.RedisDB.ZRange(ctx, key, start, end).Result()
+
+	} else {
+		rels, err = global.RedisDB.ZRevRange(ctx, key, start, end).Result()
+	}
+	if err != nil {
+		fmt.Println(err)
+	}
+	return rels
+
+}
+
+func init() {
+	go UdpSendProc()
+	go UpdRecProc()
 }

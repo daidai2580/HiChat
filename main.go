@@ -6,8 +6,10 @@ import (
 )
 
 func main() {
+	initialize.InitConfig()
 	//初始化数据库
 	initialize.InitDB()
+	initialize.InitRedis()
 	//初始化日志
 	initialize.InitLogger()
 
