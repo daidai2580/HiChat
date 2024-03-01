@@ -58,6 +58,15 @@ func LoginByNameAndPasseWord(ctx *gin.Context) {
 	})
 }
 
+// @Summary	添加账号
+// @Produce	json
+// @Param		name	formData		string	true	"用户名"
+// @Param		password		formData		string	true	"密码"
+// @Param		Identity		formData		string	true	"重复密码"
+// @Success	200			{object}	string	"成功"
+// @Failure	400			{object}	string	"请求错误"
+// @Failure	500			{object}	string	"内部错误"
+// @Router		/user/new [post]
 func NewUser(ctx *gin.Context) {
 	user := models.UserBasic{}
 	user.Name = ctx.Request.FormValue("name")
@@ -333,6 +342,15 @@ func NewGroup(ctx *gin.Context) {
 		"message": "键群成功",
 	})
 }
+
+// @Summary	添加好友
+// @Produce	json
+// @Param		targetName	body		string	true	"用户名"
+// @Param		userId		body		string	true	"用户id"
+// @Success	200			{object}	string	"成功"
+// @Failure	400			{object}	string	"请求错误"
+// @Failure	500			{object}	string	"内部错误"
+// @Router		/v1/relation/add [post]
 func AddFriendByName(ctx *gin.Context) {
 	user := ctx.PostForm("userId")
 	userId, err := strconv.Atoi(user)
