@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
-	"github.com/xuri/excelize/v2"
+	"HiChat/models"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
@@ -104,7 +105,7 @@ func main() {
 			fmt.Println(err)
 		}*/
 
-	f := excelize.NewFile()
+	/*f := excelize.NewFile()
 	defer func() {
 		if err := f.Close(); err != nil {
 			fmt.Println(err)
@@ -136,5 +137,16 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 		return
+	}*/
+	dsn := "root:root@tcp(120.24.168.49:3306)/hichat?charset=utf8mb4&parseTime=True&loc=Local"
+
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
+
+	err = db.AutoMigrate(&models.News{})
+	if err != nil {
+		panic(err)
 	}
 }

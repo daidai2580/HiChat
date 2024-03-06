@@ -58,6 +58,7 @@ func LoginByNameAndPasseWord(ctx *gin.Context) {
 	})
 }
 
+// @Tags 用户
 // @Summary	添加账号
 // @Produce	json
 // @Param		name	formData		string	true	"用户名"
@@ -343,14 +344,19 @@ func NewGroup(ctx *gin.Context) {
 	})
 }
 
+// @Tags 用户
 // @Summary	添加好友
 // @Produce	json
-// @Param		targetName	body		string	true	"用户名"
-// @Param		userId		body		string	true	"用户id"
+// @Security token
+// @Security id
+// @Param		targetName	formData		string	true	"用户名"
+// @Param		userId		formData		string	true	"用户id"
+// @Param		token		formData		string	true	"token" default(eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjMsImV4cCI6MTcxNDg4NzgxNCwiaXNzIjoieWsifQ.TpcBeL0VNThPO3QV71SFDEjhRc-frOEzOIvyTUhEMjY)
+// @Param		id		formData			int	true	"id" default(1)
 // @Success	200			{object}	string	"成功"
 // @Failure	400			{object}	string	"请求错误"
 // @Failure	500			{object}	string	"内部错误"
-// @Router		/v1/relation/add [post]
+// @Router		/relation/add [post]
 func AddFriendByName(ctx *gin.Context) {
 	user := ctx.PostForm("userId")
 	userId, err := strconv.Atoi(user)

@@ -36,6 +36,12 @@ func Route() *gin.Engine {
 	{
 		upload.POST("/image", service.Image)
 	}
+	news := v1.Group("news")
+	{
+		news.GET("/list", service.NewsList)
+		news.GET("/listAndUser", service.GetNewsAndUser)
+		news.POST("/add", service.AddNews)
+	}
 	v1.POST("/user/redisMsg", service.RedisMsg)
 	return route
 }
