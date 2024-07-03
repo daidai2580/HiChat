@@ -5,6 +5,7 @@ import (
 	"HiChat/dao"
 	"HiChat/middlewear"
 	"HiChat/models"
+	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -15,6 +16,7 @@ import (
 )
 
 func List(ctx *gin.Context) {
+
 	list, err := dao.GetUserList()
 	if err != nil {
 		ctx.JSON(200, gin.H{
@@ -26,9 +28,27 @@ func List(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, list)
 }
 
+// @Tags 用户
+// @Summary	登录
+// @Produce	json
+// @Param		name	formData		string	true	"用户名"
+// @Param		password		formData		string	true	"密码"
+// @Success	200			{object}	string	"成功"
+// @Failure	400			{object}	string	"请求错误"
+// @Failure	500			{object}	string	"内部错误"
+// @Router		/user/login_pw [post]
 func LoginByNameAndPasseWord(ctx *gin.Context) {
-	var name = ctx.PostForm("name")
-	password := ctx.PostForm("password")
+	b, _ := ctx.GetRawData()
+
+	// 定义map或结构体
+	var m map[string]interface{}
+	// 反序列化
+	_ = json.Unmarshal(b, &m)
+
+	zap.S().Info(m["name"])
+	zap.S().Info(m["password"])
+	var name = ctx.Request.FormValue("name")
+	password := ctx.Request.FormValue("password")
 	data, err := dao.FindUserByName(name)
 	if err != nil {
 		ctx.JSON(200, gin.H{

@@ -2,10 +2,15 @@ port: '8000'
 mysql:
   host: '120.24.168.49'
   port: '3306'
-  name: 'hichat'
+  name: 'hinet'
   user: 'root'
-  password: 'root'
+  password: 'Li244088167'
 redis:
   host: '120.24.168.49'
   port: '6379'
-  password: 'redis'
+  password: 'Li244088167'
+neo4j:
+  host: 'bolt://neo4j.comm.gov.jwis.cn'
+  port: '47687'
+  user: 'neo4j'
+  password: 'neo4j123'

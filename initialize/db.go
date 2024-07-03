@@ -35,7 +35,7 @@ func InitDB() {
 func InitRedis() {
 	opt := redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", global.ServiceConfig.RedisDB.Host, global.ServiceConfig.RedisDB.Port), // redis地址
-		Password: "",                                                                                         // redis密码，没有则留空
+		Password: global.ServiceConfig.RedisDB.Password,                                                      // redis密码，没有则留空
 		DB:       0,                                                                                          // 默认数据库，默认是0
 	}
 	global.RedisDB = redis.NewClient(&opt)

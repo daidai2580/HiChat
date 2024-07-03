@@ -48,6 +48,25 @@ func GetNewsAndUser(ctx *gin.Context) {
 }
 
 // @Tags 新闻
+// @Summary	新闻列表3
+// @Produce	json
+// @Success	200			{object}	string	"成功"
+// @Failure	400			{object}	string	"请求错误"
+// @Failure	500			{object}	string	"内部错误"
+// @Router		/news/listAndUser2 [get]
+func GetNewsAndUser2(ctx *gin.Context) {
+	list, err := dao.GetNewsAndUser2()
+	if err != nil {
+		ctx.JSON(200, gin.H{
+			"code":    -1,
+			"message": "获取新闻列表失败",
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, list)
+}
+
+// @Tags 新闻
 // @Summary	新增新闻列表
 // @Produce	json
 // @Param		news			body		string	true	"内容"

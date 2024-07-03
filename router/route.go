@@ -8,10 +8,16 @@ import (
 
 func Route() *gin.Engine {
 	route := gin.Default()
-
+	route.Static("/assets", "./assets")
+	route.StaticFile("/upload1691654470816168831", "./assets/upload1691654470816168831.txt")
 	v1 := route.Group("v1")
 
 	user := v1.Group("user")
+	part := v1.Group("part")
+	{
+		part.POST("/create", service.CreatePart)
+		part.GET("/findByOid", service.FinPartByOid)
+	}
 
 	{
 		user.GET("/list", middlewear.JWY(), service.List)
@@ -40,8 +46,10 @@ func Route() *gin.Engine {
 	{
 		news.GET("/list", service.NewsList)
 		news.GET("/listAndUser", service.GetNewsAndUser)
+		news.GET("/listAndUser2", service.GetNewsAndUser2)
 		news.POST("/add", service.AddNews)
 	}
 	v1.POST("/user/redisMsg", service.RedisMsg)
+
 	return route
 }

@@ -8,7 +8,7 @@ import (
 
 func InitConfig() {
 	v := viper.New()
-	configFile := "../HiChat/config-debug.yaml"
+	configFile := "./config-debug.yaml"
 
 	v.SetConfigFile(configFile)
 	if err := v.ReadInConfig(); err != nil {
